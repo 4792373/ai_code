@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的简单网页</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #007bff;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>欢迎来到我的网页</h1>
+        
+        <h2>关于这个页面</h2>
+        <p>这是一个简单的HTML页面示例，包含了基本的HTML结构和CSS样式。</p>
+        
+        <div class="highlight">
+            <strong>提示：</strong> 这个页面展示了HTML的基本元素，包括标题、段落、列表和按钮。
+        </div>
+        
+        <h2>功能特点</h2>
+        <ul>
+            <li>响应式设计，适配不同屏幕尺寸</li>
+            <li>现代化的CSS样式</li>
+            <li>简洁清晰的布局</li>
+            <li>交互式按钮</li>
+        </ul>
+        
+        <h2>联系信息</h2>
+        <p>如果你有任何问题，请随时联系我们：</p>
+        <ul>
+            <li>邮箱: [email]</li>
+            <li>电话: [phone_number]</li>
+            <li>地址: [address]</li>
+        </ul>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="showMessage()">点击我</button>
+        </div>
+    </div>
+
+    <script>
+        function showMessage() {
+            alert('你好！欢迎访问这个简单的HTML页面！');
+        }
+    </script>
+</body>
+</html>
