@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>清空 LocalStorage</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .success {
+      background-color: #52c41a;
+      color: white;
+      border: none;
+    }
+    .danger {
+      background-color: #ff4d4f;
+      color: white;
+      border: none;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .info {
+      background-color: #e6f7ff;
+      border: 1px solid #91d5ff;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>LocalStorage 管理工具</h1>
+  
+  <div class="info">
+    <strong>说明：</strong>如果浏览器显示32个用户或其他异常数据，请点击"清空所有数据"按钮，然后刷新应用页面。
+  </div>
+
+  <div>
+    <button class="success" onclick="checkData()">检查当前数据</button>
+    <button class="danger" onclick="clearMockApiData()">清空 Mock API 数据</button>
+    <button class="danger" onclick="clearAllData()">清空所有数据</button>
+  </div>
+
+  <h2>当前数据：</h2>
+  <pre id="output">点击"检查当前数据"按钮查看...</pre>
+
+  <script>
+    function checkData() {
+      const output = document.getElementById('output')
+      let result = '=== LocalStorage 数据 ===\n\n'
+      
+      // 检查 mock_api_users
+      const mockApiUsers = localStorage.getItem('mock_api_users')
+      if (mockApiUsers) {
+        try {
+          const data = JSON.parse(mockApiUsers)
+          result += `【mock_api_users】\n`
+          result += `  用户数量: ${data.users?.length || 0}\n`
+          result += `  时间戳: ${data.timestamp}\n`
+          result += `  版本: ${data.version}\n\n`
+        } catch (e) {
+          result += `【mock_api_users】解析失败: ${e.message}\n\n`
+        }
+      } else {
+        result += `【mock_api_users】未找到\n\n`
+      }
+      
+      // 检查所有 localStorage 项
+      result += `\n=== 所有 LocalStorage 键 ===\n`
+      if (localStorage.length === 0) {
+        result += '(空)\n'
+      } else {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          const value = localStorage.getItem(key)
+          result += `${i + 1}. ${key}: ${value?.substring(0, 100)}${value && value.length > 100 ? '...' : ''}\n`
+        }
+      }
+      
+      output.textContent = result
+    }
+
+    function clearMockApiData() {
+      if (confirm('确定要清空 Mock API 数据吗？')) {
+        localStorage.removeItem('mock_api_users')
+        alert('✅ 已清空 mock_api_users 数据')
+        checkData()
+      }
+    }
+
+    function clearAllData() {
+      if (confirm('确定要清空所有 LocalStorage 数据吗？此操作不可恢复！')) {
+        localStorage.clear()
+        alert('✅ 已清空所有 LocalStorage 数据')
+        checkData()
+      }
+    }
+
+    // 页面加载时自动检查
+    checkData()
+  </script>
+</body>
+</html>

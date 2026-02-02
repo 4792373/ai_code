@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>调试初始化流程</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 {
+      color: #4ec9b0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #0e639c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #1177bb;
+    }
+    .danger {
+      background-color: #f48771;
+    }
+    .danger:hover {
+      background-color: #f14c4c;
+    }
+    pre {
+      background-color: #252526;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      border-left: 3px solid #4ec9b0;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #569cd6;
+      padding-left: 10px;
+    }
+    .log-error {
+      border-left-color: #f48771;
+      color: #f48771;
+    }
+    .log-success {
+      border-left-color: #4ec9b0;
+      color: #4ec9b0;
+    }
+    .log-info {
+      border-left-color: #569cd6;
+      color: #569cd6;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 初始化流程调试工具</h1>
+  
+  <div>
+    <button onclick="testInitialization()">测试初始化流程</button>
+    <button onclick="checkLocalStorage()">检查 LocalStorage</button>
+    <button class="danger" onclick="clearAndTest()">清空并重新测试</button>
+  </div>
+
+  <h2>日志输出：</h2>
+  <div id="logs"></div>
+
+  <script type="module">
+    import { getApiClient } from './src/services/apiClient.ts'
+    import { getMockApiService, initializeMockApiService, cleanupMockApiService } from './src/services/mockApiService.ts'
+
+    let logCount = 0
+
+    function addLog(message, type = 'info') {
+      const logsDiv = document.getElementById('logs')
+      const logEntry = document.createElement('div')
+      logEntry.className = `log-entry log-${type}`
+      logEntry.textContent = `[${++logCount}] ${new Date().toLocaleTimeString()} - ${message}`
+      logsDiv.appendChild(logEntry)
+      logsDiv.scrollTop = logsDiv.scrollHeight
+    }
+
+    window.testInitialization = async function() {
+      const logsDiv = document.getElementById('logs')
+      logsDiv.innerHTML = ''
+      logCount = 0
+
+      try {
+        addLog('开始测试初始化流程...', 'info')
+        
+        // 1. 检查 localStorage
+        addLog('步骤 1: 检查 localStorage', 'info')
+        const stored = localStorage.getItem('mock_api_users')
+        if (stored) {
+          const data = JSON.parse(stored)
+          addLog(`  ✓ 找到已存储的数据: ${data.users?.length || 0} 个用户`, 'success')
+        } else {
+          addLog('  ✓ localStorage 为空', 'success')
+        }
+
+        // 2. 初始化 Mock API 服务
+        addLog('步骤 2: 初始化 Mock API 服务', 'info')
+        initializeMockApiService()
+        const mockService = getMockApiService()
+        addLog('  ✓ Mock API 服务已初始化', 'success')
+
+        // 3. 获取用户列表
+        addLog('步骤 3: 通过 Mock API 获取用户列表', 'info')
+        const response = await mockService.handleGetUsers()
+        addLog(`  ✓ 获取到 ${response.data.length} 个用户`, 'success')
+
+        // 4. 通过 API 客户端获取用户列表
+        addLog('步骤 4: 通过 API 客户端获取用户列表', 'info')
+        const apiClient = getApiClient()
+        const apiResponse = await apiClient.getUsers()
+        addLog(`  ✓ API 客户端返回 ${apiResponse.data.length} 个用户`, 'success')
+
+        // 5. 再次检查 localStorage
+        addLog('步骤 5: 再次检查 localStorage', 'info')
+        const storedAfter = localStorage.getItem('mock_api_users')
+        if (storedAfter) {
+          const dataAfter = JSON.parse(storedAfter)
+          addLog(`  ✓ 当前存储: ${dataAfter.users?.length || 0} 个用户`, 'success')
+        }
+
+        addLog('✅ 测试完成！', 'success')
+
+      } catch (error) {
+        addLog(`❌ 测试失败: ${error.message}`, 'error')
+        console.error('测试错误:', error)
+      }
+    }
+
+    window.checkLocalStorage = function() {
+      const logsDiv = document.getElementById('logs')
+      logsDiv.innerHTML = ''
+      logCount = 0
+
+      addLog('检查 LocalStorage 数据...', 'info')
+      
+      const stored = localStorage.getItem('mock_api_users')
+      if (stored) {
+        try {
+          const data = JSON.parse(stored)
+          addLog(`找到 mock_api_users:`, 'success')
+          addLog(`  - 用户数量: ${data.users?.length || 0}`, 'info')
+          addLog(`  - 时间戳: ${data.timestamp}`, 'info')
+          addLog(`  - 版本: ${data.version}`, 'info')
+          
+          if (data.users && data.users.length > 0) {
+            addLog(`前 3 个用户:`, 'info')
+            data.users.slice(0, 3).forEach((user, index) => {
+              addLog(`  ${index + 1}. ${user.name} (${user.email})`, 'info')
+            })
+          }
+        } catch (e) {
+          addLog(`解析失败: ${e.message}`, 'error')
+        }
+      } else {
+        addLog('未找到 mock_api_users 数据', 'info')
+      }
+
+      // 显示所有 localStorage 键
+      addLog(`\nLocalStorage 总共有 ${localStorage.length} 个键`, 'info')
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        addLog(`  - ${key}`, 'info')
+      }
+    }
+
+    window.clearAndTest = async function() {
+      if (!confirm('确定要清空 LocalStorage 并重新测试吗？')) {
+        return
+      }
+
+      const logsDiv = document.getElementById('logs')
+      logsDiv.innerHTML = ''
+      logCount = 0
+
+      addLog('清空 LocalStorage...', 'info')
+      localStorage.clear()
+      addLog('✓ 已清空', 'success')
+
+      addLog('清理 Mock API 服务...', 'info')
+      cleanupMockApiService()
+      addLog('✓ 已清理', 'success')
+
+      addLog('等待 1 秒...', 'info')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      await window.testInitialization()
+    }
+
+    // 页面加载时自动检查
+    window.checkLocalStorage()
+  </script>
+</body>
+</html>

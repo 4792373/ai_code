@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试创建用户</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #1890ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #40a9ff;
+    }
+    .danger {
+      background-color: #ff4d4f;
+    }
+    .danger:hover {
+      background-color: #ff7875;
+    }
+    pre {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      border: 1px solid #ddd;
+    }
+    .log {
+      margin-top: 20px;
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #1890ff;
+      padding-left: 10px;
+    }
+    .log-error {
+      border-left-color: #ff4d4f;
+      color: #ff4d4f;
+    }
+    .log-success {
+      border-left-color: #52c41a;
+      color: #52c41a;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 测试创建用户功能</h1>
+  
+  <div class="form-group">
+    <label>用户姓名：</label>
+    <input type="text" id="name" value="测试用户" placeholder="请输入用户姓名">
+  </div>
+
+  <div class="form-group">
+    <label>邮箱地址：</label>
+    <input type="email" id="email" value="test@example.com" placeholder="请输入邮箱地址">
+  </div>
+
+  <div class="form-group">
+    <label>用户角色：</label>
+    <select id="role">
+      <option value="">请选择</option>
+      <option value="admin">管理员</option>
+      <option value="moderator">协调员</option>
+      <option value="user" selected>普通用户</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>用户状态：</label>
+    <select id="status">
+      <option value="">请选择</option>
+      <option value="active" selected>激活</option>
+      <option value="inactive">未激活</option>
+      <option value="pending">待审核</option>
+    </select>
+  </div>
+
+  <div>
+    <button onclick="testCreateUser()">创建用户</button>
+    <button onclick="checkUsers()">查看用户列表</button>
+    <button class="danger" onclick="clearLogs()">清空日志</button>
+  </div>
+
+  <div class="log" id="logs"></div>
+
+  <script type="module">
+    import { getApiClient } from './src/services/apiClient.ts'
+    import { getMockApiService, initializeMockApiService } from './src/services/mockApiService.ts'
+
+    let logCount = 0
+
+    function addLog(message, type = 'info') {
+      const logsDiv = document.getElementById('logs')
+      const logEntry = document.createElement('div')
+      logEntry.className = `log-entry log-${type}`
+      logEntry.textContent = `[${++logCount}] ${new Date().toLocaleTimeString()} - ${message}`
+      logsDiv.appendChild(logEntry)
+      logsDiv.scrollTop = logsDiv.scrollHeight
+    }
+
+    // 初始化
+    initializeMockApiService()
+    addLog('Mock API 服务已初始化', 'success')
+
+    window.testCreateUser = async function() {
+      const name = document.getElementById('name').value
+      const email = document.getElementById('email').value
+      const role = document.getElementById('role').value
+      const status = document.getElementById('status').value
+
+      addLog('开始创建用户...', 'info')
+      addLog(`姓名: ${name}`, 'info')
+      addLog(`邮箱: ${email}`, 'info')
+      addLog(`角色: ${role}`, 'info')
+      addLog(`状态: ${status}`, 'info')
+
+      // 验证输入
+      if (!name || !email || !role || !status) {
+        addLog('❌ 请填写所有字段', 'error')
+        return
+      }
+
+      try {
+        const apiClient = getApiClient()
+        const userData = { name, email, role, status }
+
+        addLog('发送 API 请求...', 'info')
+        const response = await apiClient.createUser(userData)
+        
+        addLog('✅ 用户创建成功！', 'success')
+        addLog(`用户ID: ${response.data.id}`, 'success')
+        addLog(`响应消息: ${response.message}`, 'success')
+        
+        // 自动查看用户列表
+        await window.checkUsers()
+
+      } catch (error) {
+        addLog(`❌ 创建失败: ${error.message}`, 'error')
+        
+        if (error.response) {
+          addLog(`状态码: ${error.response.status}`, 'error')
+          if (error.response.data) {
+            addLog(`错误消息: ${error.response.data.message}`, 'error')
+            if (error.response.data.errors) {
+              error.response.data.errors.forEach(err => {
+                addLog(`  - ${err}`, 'error')
+              })
+            }
+          }
+        }
+        
+        console.error('详细错误:', error)
+      }
+    }
+
+    window.checkUsers = async function() {
+      try {
+        addLog('获取用户列表...', 'info')
+        const apiClient = getApiClient()
+        const response = await apiClient.getUsers()
+        
+        addLog(`✅ 当前用户数量: ${response.data.length}`, 'success')
+        
+        // 显示最后5个用户
+        const lastUsers = response.data.slice(-5)
+        addLog('最后5个用户:', 'info')
+        lastUsers.forEach((user, index) => {
+          addLog(`  ${response.data.length - 4 + index}. ${user.name} (${user.email})`, 'info')
+        })
+
+      } catch (error) {
+        addLog(`❌ 获取用户列表失败: ${error.message}`, 'error')
+        console.error('详细错误:', error)
+      }
+    }
+
+    window.clearLogs = function() {
+      document.getElementById('logs').innerHTML = ''
+      logCount = 0
+      addLog('日志已清空', 'info')
+    }
+
+    // 页面加载时自动检查用户列表
+    window.checkUsers()
+  </script>
+</body>
+</html>

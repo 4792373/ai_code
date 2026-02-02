@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试删除用户</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    .controls {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #1890ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #40a9ff;
+    }
+    .danger {
+      background-color: #ff4d4f;
+    }
+    .danger:hover {
+      background-color: #ff7875;
+    }
+    .user-list {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      margin-top: 20px;
+    }
+    .user-item {
+      padding: 10px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .user-item:last-child {
+      border-bottom: none;
+    }
+    .user-info {
+      flex: 1;
+    }
+    .log {
+      margin-top: 20px;
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #1890ff;
+      padding-left: 10px;
+    }
+    .log-error {
+      border-left-color: #ff4d4f;
+      color: #ff4d4f;
+    }
+    .log-success {
+      border-left-color: #52c41a;
+      color: #52c41a;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 测试删除用户功能</h1>
+  
+  <div class="controls">
+    <button onclick="loadUsers()">刷新用户列表</button>
+    <button onclick="checkLocalStorage()">检查 LocalStorage</button>
+    <button class="danger" onclick="clearLogs()">清空日志</button>
+  </div>
+
+  <div class="user-list" id="userList">
+    <p>加载中...</p>
+  </div>
+
+  <div class="log" id="logs"></div>
+
+  <script type="module">
+    import { getApiClient } from './src/services/apiClient.ts'
+    import { getMockApiService, initializeMockApiService } from './src/services/mockApiService.ts'
+
+    let logCount = 0
+    let users = []
+
+    function addLog(message, type = 'info') {
+      const logsDiv = document.getElementById('logs')
+      const logEntry = document.createElement('div')
+      logEntry.className = `log-entry log-${type}`
+      logEntry.textContent = `[${++logCount}] ${new Date().toLocaleTimeString()} - ${message}`
+      logsDiv.appendChild(logEntry)
+      logsDiv.scrollTop = logsDiv.scrollHeight
+    }
+
+    // 初始化
+    initializeMockApiService()
+    addLog('Mock API 服务已初始化', 'success')
+
+    async function loadUsers() {
+      try {
+        addLog('正在加载用户列表...', 'info')
+        const apiClient = getApiClient()
+        const response = await apiClient.getUsers()
+        
+        users = response.data
+        addLog(`✅ 成功加载 ${users.length} 个用户`, 'success')
+        
+        renderUserList()
+      } catch (error) {
+        addLog(`❌ 加载失败: ${error.message}`, 'error')
+        console.error('加载错误:', error)
+      }
+    }
+
+    function renderUserList() {
+      const userListDiv = document.getElementById('userList')
+      
+      if (users.length === 0) {
+        userListDiv.innerHTML = '<p>暂无用户</p>'
+        return
+      }
+
+      userListDiv.innerHTML = `
+        <h3>用户列表（共 ${users.length} 个用户）</h3>
+        ${users.map((user, index) => `
+          <div class="user-item">
+            <div class="user-info">
+              <strong>${index + 1}. ${user.name}</strong> - ${user.email}
+              <br>
+              <small>ID: ${user.id} | 角色: ${user.role} | 状态: ${user.status}</small>
+            </div>
+            <button class="danger" onclick="deleteUser('${user.id}', '${user.name}')">删除</button>
+          </div>
+        `).join('')}
+      `
+    }
+
+    window.deleteUser = async function(userId, userName) {
+      if (!confirm(`确定要删除用户 "${userName}" 吗？`)) {
+        return
+      }
+
+      try {
+        addLog(`正在删除用户: ${userName} (${userId})`, 'info')
+        
+        const apiClient = getApiClient()
+        await apiClient.deleteUser(userId)
+        
+        addLog(`✅ 用户删除成功: ${userName}`, 'success')
+        
+        // 重新加载用户列表
+        await loadUsers()
+        
+        // 检查 localStorage
+        await checkLocalStorage()
+        
+      } catch (error) {
+        addLog(`❌ 删除失败: ${error.message}`, 'error')
+        
+        if (error.response) {
+          addLog(`状态码: ${error.response.status}`, 'error')
+          if (error.response.data) {
+            addLog(`错误消息: ${error.response.data.message}`, 'error')
+          }
+        }
+        
+        console.error('删除错误:', error)
+      }
+    }
+
+    window.checkLocalStorage = async function() {
+      try {
+        const stored = localStorage.getItem('mock_api_users')
+        if (stored) {
+          const data = JSON.parse(stored)
+          addLog(`LocalStorage 中有 ${data.users?.length || 0} 个用户`, 'info')
+        } else {
+          addLog('LocalStorage 中没有数据', 'info')
+        }
+      } catch (error) {
+        addLog(`检查 LocalStorage 失败: ${error.message}`, 'error')
+      }
+    }
+
+    window.loadUsers = loadUsers
+    window.clearLogs = function() {
+      document.getElementById('logs').innerHTML = ''
+      logCount = 0
+      addLog('日志已清空', 'info')
+    }
+
+    // 页面加载时自动加载用户列表
+    loadUsers()
+  </script>
+</body>
+</html>
