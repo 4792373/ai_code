@@ -29,3 +29,18 @@ coverage
 # Build
 .tmp
 *.tsbuildinfo
+
+# 临时调试文件
+check-localstorage.html
+clear-storage.html
+debug-initialization.html
+test-create-user.html
+test-delete-user.html
+test-mock-api.html
+
+# 开发工具脚本
+cleanup-volar.cmd
+cleanup-volar.ps1
+fix-volar.cmd
+fix-volar.ps1
+kill-vscode-processes.cmd
