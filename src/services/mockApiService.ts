@@ -28,6 +28,7 @@ export interface MockApiService {
   handleCreateUser(userData: CreateUserData): Promise<ApiResponse<User>>
   handleUpdateUser(id: string, userData: UpdateUserData): Promise<ApiResponse<User>>
   handleDeleteUser(id: string): Promise<ApiResponse<void>>
+  handleBatchDeleteUsers(userIds: string[]): Promise<ApiResponse<void>>
   
   /** 品牌管理端点 */
   handleGetBrands(params?: BrandQueryParams): Promise<ApiResponse<Brand[]>>
@@ -734,6 +735,64 @@ export class MockApiServiceImpl implements MockApiService {
     this.saveToStorage()
 
     return this.createResponse(undefined as any, '用户删除成功')
+  }
+
+  /**
+   * 批量删除用户
+   * DELETE /api/users/batch
+   * Body: { userIds: string[] }
+   */
+  public async handleBatchDeleteUsers(userIds: string[]): Promise<ApiResponse<void>> {
+    await this.simulateDelay('DELETE')
+
+    if (!this.initialized) {
+      this.initialize()
+    }
+
+    // 验证请求体中的 userIds 数组
+    if (!Array.isArray(userIds)) {
+      this.createErrorResponse('请提供要删除的用户 ID 数组', ['userIds 必须是数组'])
+    }
+
+    if (userIds.length === 0) {
+      this.createErrorResponse('请提供要删除的用户 ID 数组', ['userIds 不能为空数组'])
+    }
+
+    // 查找不存在的用户 ID
+    const notFoundIds: string[] = []
+    for (const userId of userIds) {
+      const userExists = this.users.some(user => user.id === userId)
+      if (!userExists) {
+        notFoundIds.push(userId)
+      }
+    }
+
+    // 处理部分用户不存在的情况（返回 404）
+    if (notFoundIds.length > 0) {
+      const error = new Error(`部分用户不存在: ${notFoundIds.join(', ')}`) as any
+      error.response = {
+        data: {
+          success: false,
+          message: `部分用户不存在: ${notFoundIds.join(', ')}`,
+          errors: notFoundIds.map(id => `用户 ${id} 不存在`),
+          timestamp: new Date().toISOString()
+        },
+        status: 404
+      }
+      throw error
+    }
+
+    // 执行批量删除并更新内存存储
+    this.users = this.users.filter(user => !userIds.includes(user.id))
+    
+    // 保存到 localStorage
+    this.saveToStorage()
+
+    // 返回标准 API 响应格式
+    return this.createResponse(
+      undefined as any, 
+      `成功删除 ${userIds.length} 个用户`
+    )
   }
 
   // ==================== 品牌管理端点实现 ====================

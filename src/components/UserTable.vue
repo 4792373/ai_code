@@ -6,6 +6,7 @@
       :loading="loading"
       :pagination="paginationConfig"
       :locale="locale"
+      :row-selection="rowSelection"
       row-key="id"
       size="middle"
       @change="handleTableChange"
@@ -61,6 +62,7 @@ import { Table, Tag, Button, Space } from 'ant-design-vue'
 import type { User } from '@/types/user'
 import { UserRole, UserStatus } from '@/types/user'
 import type { TableColumnsType, TableProps } from 'ant-design-vue'
+import type { Key } from 'ant-design-vue/es/table/interface'
 
 // Ant Design Vue 组件
 const ATable = Table
@@ -72,15 +74,19 @@ const ASpace = Space
 interface Props {
   users: User[]
   loading: boolean
+  selectedRowKeys?: string[]  // 新增：选中的行键
 }
 
 // Emits 定义
 interface Emits {
   edit: [user: User]
   delete: [userId: string]
+  selectionChange: [selectedRowKeys: string[]]  // 新增：选中状态变化事件
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  selectedRowKeys: () => []
+})
 const emit = defineEmits<Emits>()
 
 // 分页状态
@@ -150,6 +156,19 @@ const paginationConfig = computed(() => ({
 const locale = {
   emptyText: '暂无数据'
 }
+
+// 行选择配置
+const rowSelection = computed(() => ({
+  selectedRowKeys: props.selectedRowKeys,
+  onChange: (selectedRowKeys: Key[]) => {
+    emit('selectionChange', selectedRowKeys as string[])
+  },
+  // 禁用某些行的选择（可选）
+  getCheckboxProps: (record: User) => ({
+    disabled: false,  // 可以根据用户状态禁用
+    name: record.name
+  })
+}))
 
 // 角色颜色映射
 const getRoleColor = (role: UserRole): string => {

@@ -56,6 +56,9 @@ const mockApiAdapter = async (config: InternalAxiosRequestConfig): Promise<Axios
       // PUT /api/users/:id
       const id = url.split('/').pop()!
       response = await mockService.handleUpdateUser(id, data)
+    } else if (method.toLowerCase() === 'delete' && url.includes('/users/batch')) {
+      // DELETE /api/users/batch
+      response = await mockService.handleBatchDeleteUsers(data.userIds)
     } else if (method.toLowerCase() === 'delete' && url.match(/\/users\/[^/]+$/)) {
       // DELETE /api/users/:id
       const id = url.split('/').pop()!
@@ -317,6 +320,21 @@ class ApiClient {
     return this.request<void>({
       method: 'DELETE',
       url: `/api/users/${id}`
+    }, requestId)
+  }
+
+  /**
+   * 批量删除用户
+   * @param userIds 要删除的用户 ID 数组
+   * @param requestId 请求ID（可选，用于取消请求）
+   * @returns 批量删除结果响应
+   */
+  public async batchDeleteUsers(userIds: string[], requestId?: string): Promise<ApiResponse<void>> {
+    return this.request<void>({
+      method: 'DELETE',
+      url: '/api/users/batch',
+      data: { userIds },
+      timeout: 5000
     }, requestId)
   }
 

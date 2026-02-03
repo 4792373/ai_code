@@ -353,6 +353,64 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /**
+   * 批量删除用户（通过 API）
+   * @param userIds 要删除的用户 ID 数组
+   * @throws {ValidationError} 当 userIds 数组为空时
+   * @throws {NetworkError} 当网络连接失败时
+   * @throws {StorageError} 当 API 调用失败时
+   */
+  const batchDeleteUsers = async (userIds: string[]): Promise<void> => {
+    // 验证 userIds 数组不为空
+    if (!userIds || userIds.length === 0) {
+      throw createValidationError('没有选中要删除的用户', ['userIds 数组不能为空'])
+    }
+    
+    const operationType = 'batchDeleteUsers'
+    
+    // 取消之前的同类型请求
+    cancelPreviousRequest(operationType)
+    
+    uiStore.setLoading(true)
+    clearError()
+    
+    // 生成请求ID并跟踪
+    const requestId = `${operationType}_${Date.now()}`
+    trackRequest(operationType, requestId)
+    
+    try {
+      // 调用 API 客户端的批量删除方法
+      const response = await apiClient.batchDeleteUsers(userIds, requestId)
+      
+      if (response.success) {
+        // 成功后从本地状态中移除已删除的用户
+        state.users = state.users.filter(user => !userIds.includes(user.id))
+        state.pagination.total = state.users.length
+        
+        // 如果删除的用户中包含当前用户，清空当前用户
+        if (state.currentUser && userIds.includes(state.currentUser.id)) {
+          state.currentUser = null
+        }
+        
+        console.log(`[UserStore] 批量删除成功: ${userIds.length} 个用户`)
+      } else {
+        throw createStorageError(response.message || '批量删除失败')
+      }
+    } catch (error: any) {
+      // 如果是请求被取消，不处理错误
+      if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+        console.log(`[UserStore] ${operationType} 请求被取消`)
+        throw error
+      }
+      
+      handleApiError(error, '批量删除用户失败')
+      throw error // 重新抛出错误供组件处理
+    } finally {
+      untrackRequest(operationType)
+      uiStore.setLoading(false)
+    }
+  }
+
   // 设置搜索关键词并刷新数据
   const setSearchKeyword = async (keyword: string) => {
     state.searchKeyword = keyword
@@ -566,6 +624,7 @@ export const useUserStore = defineStore('user', () => {
     addUser,
     updateUser,
     deleteUser,
+    batchDeleteUsers,
     fetchUserById,
     refreshUser,
     

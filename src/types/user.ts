@@ -36,3 +36,31 @@ export interface UserFilters {
   role?: string
   status?: string
 }
+
+/**
+ * 批量删除请求体
+ */
+export interface BatchDeleteRequest {
+  userIds: string[]
+}
+
+/**
+ * 批量删除响应
+ */
+export interface BatchDeleteResponse {
+  deletedCount: number
+  failedIds?: string[]  // 删除失败的用户 ID（可选）
+  errors?: string[]     // 错误详情（可选）
+}
+
+/**
+ * 行选择配置
+ */
+export interface RowSelectionConfig {
+  selectedRowKeys: string[]
+  onChange: (selectedRowKeys: string[]) => void
+  getCheckboxProps?: (record: User) => {
+    disabled: boolean
+    name: string
+  }
+}
