@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { MockApiServiceImpl } from '../mockApiService'
-import { UserRole, UserStatus } from '@/types/user'
-import type { CreateUserData } from '@/types/user'
+import { UserRole, UserStatus } from '../../types/user'
+import type { CreateUserData } from '../../types/user'
 
 // 模拟配置服务
 vi.mock('../configService', () => ({
