@@ -2,24 +2,49 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
       "disabled": false,
-      "autoApprove": ["read_file", "list_directory"]
+      "autoApprove": [
+        "read_file",
+        "list_directory"
+      ]
     },
     "memory": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
       "disabled": false,
-      "autoApprove": ["create_entities", "create_relations", "add_observations"]
+      "autoApprove": [
+        "create_entities",
+        "create_relations",
+        "add_observations"
+      ]
     },
     "github": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
       "disabled": true,
       "autoApprove": [],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": ""
       }
+    },
+    "Pixso MCP": {
+      "url": "http://127.0.0.1:3667/mcp",
+      "header": {},
+      "autoApprove": [
+        "getLocalStyles",
+        "getNodeDSL"
+      ]
     }
   }
 }
